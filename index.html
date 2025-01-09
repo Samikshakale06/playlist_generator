@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist Generator</title>
+    <script>
+        function createPlaylist() {
+            const playlistName = document.getElementById('playlistName').value;
+            if (playlistName) {
+                fetch('/create_playlist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: playlistName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('playlistName').value = '';
+                    renderPlaylists(data);
+                })
+                .catch(error => console.error('Error:', error));
+            } else {
+                alert('Please enter a playlist name.');
+            }
+        }
+
+        function addSong(playlistIndex) {
+            const songName = document.getElementById(`songInput${playlistIndex}`).value;
+            if (songName) {
+                fetch('/add_song', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: songName, playlist_index: playlistIndex })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById(`songInput${playlistIndex}`).value = '';
+                    renderPlaylists(data);
+                })
+                .catch(error => console.error('Error:', error));
+            } else {
+                alert('Please enter a song name.');
+            }
+        }
+
+        function removeSong(playlistIndex, songIndex) {
+            fetch('/remove_song', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ playlist_index: playlistIndex, song_index: songIndex })
+            })
+            .then(response => response.json())
+            .then(data => {
+                renderPlaylists(data);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function deletePlaylist(playlistIndex) {
+            fetch('/delete_playlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ playlist_index: playlistIndex })
+            })
+            .then(response => response.json())
+            .then(data => {
+                renderPlaylists(data);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function renderPlaylists(playlists) {
+            const playlistsDiv = document.getElementById('playlists');
+            playlistsDiv.innerHTML = '';
+            playlists.forEach((playlist, index) => {
+                const playlistDiv = document.createElement('div');
+                playlistDiv.className = 'playlist';
+                playlistDiv.innerHTML = `
+                    <h2>${playlist.name}</h2>
+                    <button onclick="deletePlaylist(${index})">Delete Playlist</button>
+                    <input type="text" placeholder="Add a song" id="songInput${index}">
+                    <button onclick="addSong(${index})">Add Song</button>
+                    <ul id="songList${index}">
+                        ${playlist.songs.map((song, songIndex) => `
+                            <li>${song} <button onclick="removeSong(${index}, ${songIndex})">Remove</button></li>
+                        `).join('')}
+                    </ul>
+                `;
+                playlistsDiv.appendChild(playlistDiv);
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Playlist Generator</h1>
+        
+        <div>
+            <input type="text" id="playlistName" placeholder="Enter Playlist Name">
+            <button onclick="createPlaylist()">Create Playlist</button>
+        </div>
+
+        <div id="playlists"></div>
+    </div>
+</body>
+</html>
